@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ar">
+
+<head>
+  <link rel="manifest" href="manifest.json">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(() => console.log("Service Worker Registered"));
+    }
+  </script>
+
+  <meta charset="UTF-8">
+  <title>تطبيق المحاسبة</title>
+  <style>
+    body {
+      font-size: 16px;
+      font-family: 'Segoe UI', sans-serif;
+      direction: rtl;
+      background-color: #f0f0f0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    form {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      margin-bottom: 30px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      margin-top: 15px;
+    }
+
+    input,
+    textarea,
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    th,
+    td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+
+    tr:hover {
+      background-color: #f9f9f9;
+    }
+
+    .total-box {
+      margin-top: 20px;
+      background: #fff;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.08);
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>تطبيق المحاسبة</h1>
+
+  <form id="accounting-form">
+    <label>رقم العملية</label>
+    <input type="text" id="transactionId" required>
+
+    <label>اسم العميل</label>
+    <input type="text" id="clientName" required>
+
+    <label>التاريخ</label>
+    <input type="date" id="date" required>
+
+    <label>الإيرادات</label>
+    <input type="number" id="income" required>
+
+    <label>المصروفات</label>
+    <input type="number" id="expense" required>
+
+    <label>الخصم</label>
+    <input type="number" id="discount" required>
+
+    <label>الوصف</label>
+    <textarea id="description" rows="2"></textarea>
+
+    <button type="submit">إضافة العملية</button>
+  </form>
+
+  <table id="transactions-table">
+    <thead>
+      <tr>
+        <th>رقم</th>
+        <th>اسم العميل</th>
+        <th>التاريخ</th>
+        <th>الإيرادات</th>
+        <th>المصروفات</th>
+        <th>الخصم</th>
+        <th>الرصيد</th>
+        <th>الإجمالي بعد الخصم</th>
+        <th>الوصف</th>
+        <th>حذف</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- العمليات ستُضاف هنا -->
+    </tbody>
+  </table>
+
+  <script>
+    const form = document.getElementById('accounting-form');
+    const tableBody = document.querySelector('#transactions-table tbody');
+
+    let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+
+    // تحميل البيانات الموجودة عند بداية الصفحة
+    window.onload = () => {
+      transactions.forEach(addTransactionToTable);
+    };
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const transaction = {
+        id: document.getElementById('transactionId').value,
+        client: document.getElementById('clientName').value,
+        date: document.getElementById('date').value,
+        income: parseFloat(document.getElementById('income').value) || 0,
+        expense: parseFloat(document.getElementById('expense').value) || 0,
+        discount: parseFloat(document.getElementById('discount').value) || 0,
+        description: document.getElementById('description').value
+      };
+
+      transaction.balance = transaction.income - (transaction.expense + transaction.discount);
+      transaction.totalAfterDiscount = transaction.income - transaction.discount;
+
+      transactions.push(transaction);
+      localStorage.setItem('transactions', JSON.stringify(transactions));
+
+      addTransactionToTable(transaction);
+      form.reset();
+    });
+
+    function addTransactionToTable(transaction) {
+      const row = document.createElement('tr');
+
+      row.innerHTML = `
+    <td>${transaction.id}</td>
+    <td>${transaction.client}</td>
+    <td>${transaction.date}</td>
+    <td>${transaction.income.toFixed(2)}</td>
+    <td>${transaction.expense.toFixed(2)}</td>
+    <td>${transaction.discount.toFixed(2)}</td>
+    <td>${transaction.balance.toFixed(2)}</td>
+    <td>${transaction.totalAfterDiscount.toFixed(2)}</td>
+    <td>${transaction.description}</td>
+    <td><button onclick="deleteTransaction('${transaction.id}')">🗑️</button></td>
+  `;
+
+      tableBody.appendChild(row);
+    }
+
+    function deleteTransaction(id) {
+      transactions = transactions.filter(t => t.id !== id);
+      localStorage.setItem('transactions', JSON.stringify(transactions));
+      tableBody.innerHTML = '';
+      transactions.forEach(addTransactionToTable);
+    }
+
+  </script>
+
+</body>
+
+</html>
